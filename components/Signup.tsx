@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
+import { createUserWithEmailAndPassword, sendEmailVerification, signInWithPopup, updateProfile } from 'firebase/auth';
+import { auth, googleProvider, db, setDoc, doc } from '../firebase';
+import { UserProfile } from '../types';
 import GoogleIcon from './icons/GoogleIcon';
 
 
@@ -20,6 +21,10 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin, onRequireVerification 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
     if (password !== repeatPassword) {
       setError('Passwords do not match');
       return;
@@ -28,6 +33,20 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin, onRequireVerification 
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Update auth profile
+      await updateProfile(user, { displayName: name });
+      
+      // Create user profile in Firestore
+      const newUserProfile: UserProfile = {
+        uid: user.uid,
+        name: name,
+        email: user.email!,
+        photoURL: null
+      };
+      await setDoc(doc(db, "users", user.uid), newUserProfile);
+      
       try {
         await sendEmailVerification(userCredential.user);
       } catch (verificationError: any) {
@@ -53,7 +72,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin, onRequireVerification 
     setGoogleLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged in App.tsx will handle the redirect
+      // onAuthStateChanged in App.tsx will handle the redirect and Firestore doc creation
     } catch (err: any) {
        // Handle common errors like popup closed by user
        if (err.code !== 'auth/popup-closed-by-user') {
@@ -92,7 +111,7 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin, onRequireVerification 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium leading-6 text-slate-900">Full Name</label>
-          <input id="name" name="name" type="text" required value={name} onChange={(e) => setName(e.target.value)} className="mt-2 block w-full rounded-md border border-slate-300 bg-white py-2.5 px-3 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 sm:text-sm sm:leading-6"/>
+          <input id="name" name="name" type="text" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} className="mt-2 block w-full rounded-md border border-slate-300 bg-white py-2.5 px-3 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 sm:text-sm sm:leading-6"/>
         </div>
         <div>
           <label htmlFor="signup-email" className="block text-sm font-medium leading-6 text-slate-900">Email address</label>
@@ -100,7 +119,8 @@ const Signup: React.FC<SignupProps> = ({ onSwitchToLogin, onRequireVerification 
         </div>
         <div>
           <label htmlFor="signup-password"className="block text-sm font-medium leading-6 text-slate-900">Password</label>
-          <input id="signup-password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 block w-full rounded-md border border-slate-300 bg-white py-2.5 px-3 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 sm:text-sm sm:leading-6"/>
+          <input id="signup-password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 block w-full rounded-md border border-slate-300 bg-white py-2.5 px-3 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 sm:text-sm sm:leading-6" aria-describedby="password-help"/>
+          <p className="mt-1 text-xs text-slate-500" id="password-help">Must be at least 6 characters long.</p>
         </div>
         <div>
           <label htmlFor="repeat-password"className="block text-sm font-medium leading-6 text-slate-900">Repeat Password</label>
