@@ -1,18 +1,20 @@
-
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { auth } from '../firebase';
+import { signInWithEmailAndPassword, sendEmailVerification, signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
+import GoogleIcon from './icons/GoogleIcon';
 
 interface LoginProps {
   onSwitchToSignup: () => void;
   onRequireVerification: (email: string) => void;
+  onSwitchToForgot: () => void;
 }
 
-const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification }) => {
+const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification, onSwitchToForgot }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,19 +24,14 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification }
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       if (!userCredential.user.emailVerified) {
         try {
-          // Resend verification email, but don't sign out.
-          // App.tsx's onAuthStateChanged will see the unverified user and show the correct screen.
           await sendEmailVerification(userCredential.user);
         } catch (verificationError: any) {
           if (verificationError.code !== 'auth/too-many-requests') {
-            // Log other errors, but don't block the user from seeing the verification screen.
             console.error("Failed to resend verification email:", verificationError);
           }
         }
-        // App.tsx will now handle showing the verification screen.
         return;
       }
-      // If verified, onAuthStateChanged listener in App.tsx will handle successful login.
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential') {
         setError('Password or Email Incorrect');
@@ -44,6 +41,23 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification }
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged in App.tsx will handle the redirect
+    } catch (err: any) {
+      // Handle common errors like popup closed by user
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setError('Failed to sign in with Google. Please try again.');
+        console.error(err);
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -75,9 +89,20 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification }
         </div>
 
         <div>
-           <label htmlFor="password" className="block text-sm font-medium leading-6 text-slate-900">
-              Password
-            </label>
+           <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium leading-6 text-slate-900">
+                Password
+              </label>
+              <div className="text-sm">
+                <button
+                  type="button"
+                  onClick={onSwitchToForgot}
+                  className="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            </div>
           <div className="mt-2">
             <input
               id="password"
@@ -95,7 +120,7 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification }
         <div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || googleLoading}
             className="flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50"
           >
             {loading ? 'Signing in...' : 'Sign in'}
@@ -103,6 +128,29 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification }
         </div>
       </form>
       
+      <div className="my-6">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-slate-500">OR</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={loading || googleLoading}
+          className="flex w-full items-center justify-center gap-3 rounded-md bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
+        >
+          <GoogleIcon className="h-5 w-5" />
+          {googleLoading ? 'Redirecting...' : 'Sign in with Google'}
+        </button>
+      </div>
+
       {error && <p role="alert" className="mt-4 text-center text-sm text-red-600">{error}</p>}
 
       <p className="mt-8 text-center text-sm text-slate-500">

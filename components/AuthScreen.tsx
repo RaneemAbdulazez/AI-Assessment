@@ -1,12 +1,12 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import Login from './Login';
 import Signup from './Signup';
 import EmailVerification from './EmailVerification';
+import ForgotPassword from './ForgotPassword';
 
-export type AuthView = 'login' | 'signup' | 'verify';
+export type AuthView = 'login' | 'signup' | 'verify' | 'forgot';
 
 interface AuthScreenProps {
   initialView?: AuthView;
@@ -25,6 +25,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialView = 'login', verifica
     }, [initialView, initialEmail]);
 
     const switchToSignup = useCallback(() => setView('signup'), []);
+    const switchToForgot = useCallback(() => setView('forgot'), []);
 
     const switchToLogin = useCallback(() => {
         if (view === 'verify') {
@@ -45,9 +46,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ initialView = 'login', verifica
                 return <Signup onSwitchToLogin={switchToLogin} onRequireVerification={requireVerification} />;
             case 'verify':
                 return <EmailVerification email={verificationEmail} onSwitchToLogin={switchToLogin} />;
+            case 'forgot':
+                return <ForgotPassword onSwitchToLogin={switchToLogin} />;
             case 'login':
             default:
-                return <Login onSwitchToSignup={switchToSignup} onRequireVerification={requireVerification} />;
+                return <Login onSwitchToSignup={switchToSignup} onRequireVerification={requireVerification} onSwitchToForgot={switchToForgot} />;
         }
     };
 
