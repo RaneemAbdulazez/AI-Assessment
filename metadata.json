@@ -1,0 +1,5 @@
+{
+  "name": "Adopli AI Readiness Assessment",
+  "description": "An interactive web app to assess a company's readiness for AI adoption. It analyzes operations, identifies opportunities across departments, evaluates potential ROI and time savings, and generates a strategic AI roadmap with both quick wins and long-term goals.",
+  "requestFramePermissions": []
+}
