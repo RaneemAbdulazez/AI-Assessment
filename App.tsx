@@ -1,17 +1,17 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 import { auth, db, doc, getDoc, setDoc } from './firebase';
 
 import { AssessmentStep, UserProfile } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
-import AssessmentPlaceholder from './components/AssessmentPlaceholder';
+import CompanyOverview from './components/CompanyOverview';
 import AdopliLogo from './components/icons/AdopliLogo';
 import AuthScreen from './components/AuthScreen';
 import LogoutIcon from './components/icons/LogoutIcon';
 import UserIcon from './components/icons/UserIcon';
 import ProfileModal from './components/ProfileModal';
 import { AuthView } from './components/AuthScreen';
+import AssessmentPlaceholder from './components/AssessmentPlaceholder';
 
 const AssessmentContent: React.FC<{ 
   onLogout: () => void, 
@@ -22,18 +22,23 @@ const AssessmentContent: React.FC<{
   const [currentStep, setCurrentStep] = useState<AssessmentStep>(AssessmentStep.Welcome);
 
   const startAssessment = useCallback(() => {
-    setCurrentStep(AssessmentStep.CompanyProfile);
+    setCurrentStep(AssessmentStep.CompanyOverview);
+  }, []);
+  
+  const handleNextStep = useCallback(() => {
+    // This will navigate to the next step in a future implementation
+    console.log("Proceeding to the next step");
   }, []);
 
   const renderStep = () => {
     switch (currentStep) {
       case AssessmentStep.Welcome:
         return <WelcomeScreen onStart={startAssessment} />;
-      case AssessmentStep.CompanyProfile:
-        return <AssessmentPlaceholder title="Step 1: Company Profile" />;
+      case AssessmentStep.CompanyOverview:
+        return <CompanyOverview onContinue={handleNextStep} />;
       // Future steps would be added here
       default:
-        return <WelcomeScreen onStart={startAssessment} />;
+        return <AssessmentPlaceholder title="Assessment In Progress" />;
     }
   };
 

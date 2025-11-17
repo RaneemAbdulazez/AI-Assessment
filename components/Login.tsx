@@ -15,10 +15,17 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification, 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [hasCredentialError, setHasCredentialError] = useState(false);
+
+  const handleInputFocus = () => {
+    if (error) setError('');
+    if (hasCredentialError) setHasCredentialError(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setHasCredentialError(false);
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -30,11 +37,13 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification, 
             console.error("Failed to resend verification email:", verificationError);
           }
         }
+        onRequireVerification(email);
         return;
       }
     } catch (err: any) {
       if (err.code === 'auth/invalid-credential') {
         setError('Password or Email Incorrect');
+        setHasCredentialError(true);
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
@@ -61,6 +70,11 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification, 
     }
   };
 
+  const baseInputClasses = "block w-full rounded-md border bg-white py-2.5 px-3 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 sm:text-sm sm:leading-6";
+  const normalInputClasses = "border-slate-300 focus:border-indigo-600 focus:ring-indigo-600";
+  const errorInputClasses = "border-red-500 text-red-900 focus:border-red-500 focus:ring-red-500";
+  const inputClassName = `${baseInputClasses} ${hasCredentialError ? errorInputClasses : normalInputClasses}`;
+
   return (
     <div className="w-full">
       <h2 className="text-3xl font-bold text-slate-900 mb-2 text-center">
@@ -83,7 +97,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification, 
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white py-2.5 px-3 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              onFocus={handleInputFocus}
+              className={inputClassName}
             />
           </div>
         </div>
@@ -112,7 +127,8 @@ const Login: React.FC<LoginProps> = ({ onSwitchToSignup, onRequireVerification, 
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-md border border-slate-300 bg-white py-2.5 px-3 text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+              onFocus={handleInputFocus}
+              className={inputClassName}
             />
           </div>
         </div>
